@@ -1,0 +1,17 @@
+discriminator: 1234
+passcode: 20202021
+KVS: kvs1
+trace_to_app_args: json:out/trace_data/app-{SCRIPT_BASE_NAME}.json
+enable_key: 000102030405060708090a0b0c0d0e0f
+PICS: src/app/tests/suites/certification/ci-pics-values
+storage_path: admin_storage.json
+commissioning_method: on-network
+hex_arg: enableKey:000102030405060708090a0b0c0d0e0f
+endpoint: 1
+trace_to_script_args_json: json:out/trace_data/test-{SCRIPT_BASE_NAME}.json 
+trace_to_script_args_perfetto: perfetto:out/trace_data/test-{SCRIPT_BASE_NAME}.perfetto
+app:
+ all-clusters: out/linux-x64-all-clusters-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-all-clusters-app
+ lock: out/linux-x64-lock-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-lock-app
+ energy-management: out/linux-x64-energy-management-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-energy-management-app
+
