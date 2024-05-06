@@ -1,5 +1,5 @@
 from metadata import Metadata, MetadataReader
-from typing import List, Union
+from typing import List, Union, Optional
 from os.path import relpath
 
 
@@ -31,34 +31,32 @@ class TestRunner:
 
         return run_arg_strings
 
-    def __append_arg__(self, full_arg_string: str, arg_type: str, arg_val: Union[str,bool,None,int]) -> str:
+    def __arg_values__(self, arg_type: str, arg_val: Union[str,bool,None,int]) -> List[str]:
         """
-        Helper method to add new argument values to the final argument 
-        string that will be sent to shell.
+        Generates an argument string corresponding to the given `arg-type` and value.
 
-        Parameters:
+        Generally generates a string of the form "--foo bar" for string-like values
+        or "--foo" for boolean arguments.
 
-        full_arg_string:
-         The the argument string as it currently exists
-
-        arg_type:
-         Argument type; example, "--factoryreset", "--app"
-
-        arg_val:
-         Value associated with the argument type
+        Returns:
+           empty list if no argument is to be added
+           ["key"] or ["key", "value"] when some arguments are required
         """
 
         if type(arg_val)==bool:
             if arg_val:
-                return full_arg_string+" "+arg_type
-            else:
-                return full_arg_string
+                return [arg_type] # boolean value
+            # Argument is NOT set, do not return a value
+            return []
             
             
-        if arg_val != None and arg_val != "":
-            return full_arg_string + " " + arg_type+" "+str(arg_val)
+        if not arg_val:
+            # None or empty list
+            return []
 
-        return full_arg_string
+        # A key with a value here
+        return [arg_type, str(arg_val)]
+
     
     def get_app_args(self, run: Metadata) -> str:
         """
@@ -71,13 +69,13 @@ class TestRunner:
          Object that contains all the run arguments including app args
         """
 
-        app_args=""
-        app_args = self.__append_arg__(app_args,"--discriminator",run.discriminator)
-        app_args = self.__append_arg__(app_args,"--KVS",run.KVS)
-        app_args = self.__append_arg__(app_args,"--enable-key",run.enable_key)
-        app_args = self.__append_arg__(app_args,"--trace-to", run.trace_to_app_args)
+        app_args = []
+        app_args.extend(self.__arg_values__("--discriminator",run.discriminator))
+        app_args.extend(self.__arg_values__("--KVS",run.KVS))
+        app_args.extend(self.__arg_values__("--enable-key",run.enable_key))
+        app_args.extend(self.__arg_values__("--trace-to", run.trace_to_app_args))
 
-        return app_args
+        return " ".join(app_args)
 
     
     
@@ -92,26 +90,26 @@ class TestRunner:
          Object that contains all the run arguments including script args
         """
 
-        script_args=""
+        script_args= []
 
-        script_args = self.__append_arg__(script_args,"--log-level", run.log_level)
-        script_args = self.__append_arg__(script_args,"--t", run.t)
-        script_args = self.__append_arg__(script_args,"--disable-test", run.disable_test)
-        script_args = self.__append_arg__(script_args,"--storage-path", run.storage_path)
-        script_args = self.__append_arg__(script_args,"--commissioning-method", run.commissioning_method)
-        script_args = self.__append_arg__(script_args,"--discriminator", run.discriminator)
-        script_args = self.__append_arg__(script_args,"--passcode", run.passcode)
-        script_args = self.__append_arg__(script_args,"--PICS", run.PICS)
-        script_args = self.__append_arg__(script_args,"--endpoint", run.endpoint)
-        script_args = self.__append_arg__(script_args,"--int-arg", run.int_arg)
-        script_args = self.__append_arg__(script_args,"--hex-arg", run.hex_arg)
-        script_args = self.__append_arg__(script_args,"--manual-code", run.manual_code)
-        script_args = self.__append_arg__(script_args,"--tests", run.tests)
-        script_args = self.__append_arg__(script_args,"--bool-arg", run.bool_arg)
-        script_args = self.__append_arg__(script_args,"--trace-to",run.trace_to_script_args_json)
-        script_args = self.__append_arg__(script_args,"--trace-to", run.trace_to_script_args_perfetto)
+        script_args.extend(self.__arg_values__("--log-level", run.log_level))
+        script_args.extend(self.__arg_values__("--t", run.t))
+        script_args.extend(self.__arg_values__("--disable-test", run.disable_test))
+        script_args.extend(self.__arg_values__("--storage-path", run.storage_path))
+        script_args.extend(self.__arg_values__("--commissioning-method", run.commissioning_method))
+        script_args.extend(self.__arg_values__("--discriminator", run.discriminator))
+        script_args.extend(self.__arg_values__("--passcode", run.passcode))
+        script_args.extend(self.__arg_values__("--PICS", run.PICS))
+        script_args.extend(self.__arg_values__("--endpoint", run.endpoint))
+        script_args.extend(self.__arg_values__("--int-arg", run.int_arg))
+        script_args.extend(self.__arg_values__("--hex-arg", run.hex_arg))
+        script_args.extend(self.__arg_values__("--manual-code", run.manual_code))
+        script_args.extend(self.__arg_values__("--tests", run.tests))
+        script_args.extend(self.__arg_values__("--bool-arg", run.bool_arg))
+        script_args.extend(self.__arg_values__("--trace-to",run.trace_to_script_args_json))
+        script_args.extend(self.__arg_values__("--trace-to", run.trace_to_script_args_perfetto))
                
-        return script_args
+        return " ".join(script_args)
 
     
     def generate_run_arg_string(self, run: Metadata) -> str:
@@ -125,23 +123,23 @@ class TestRunner:
          Object that contains all the run arguments including app args
         """
 
-        run_arg_string = "scripts/run_in_python_env.sh out/venv './scripts/tests/run_python_test.py"
-        app_args = self.get_app_args(run)
-        script_args = self.get_script_args(run)
-
-        run_arg_string = self.__append_arg__(run_arg_string,"--app",run.app)
-        run_arg_string = self.__append_arg__(run_arg_string,"--factoryreset",run.factoryreset)
+        run_args = []
+        run_args.extend(self.__arg_values__("--app",run.app))
+        run_args.extend(self.__arg_values__("--factoryreset",run.factoryreset))
         
                         
+        app_args = self.get_app_args(run)
         if app_args != "":
-            run_arg_string = run_arg_string + ' --app-args "' + app_args + '"'
+            run_args.extend(['--app-args', f'"{app_args}"'])
 
         if run.py_script_path != None:
-            run_arg_string = run_arg_string + ' --script "' + str(run.py_script_path) + '"'
+            run_args.extend(['--script', f'"{str(run.py_script_path)}"'])
 
+        script_args = self.get_script_args(run)
         if script_args != "":
-            run_arg_string = run_arg_string + ' --script-args "' + script_args + '"'
+            run_args.extend(['--script-args', f'"{script_args}"'])
 
-        run_arg_string = run_arg_string + "'"
+        run_args_string = " ".join(run_args)
 
-        return run_arg_string
+        return f"scripts/run_in_python_env.sh out/venv './scripts/tests/run_python_test.py {run_args_string}'"
+
