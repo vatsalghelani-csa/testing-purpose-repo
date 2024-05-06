@@ -141,5 +141,5 @@ class TestRunner:
 
         run_args_string = " ".join(run_args)
 
-        return f"scripts/run_in_python_env.sh out/venv './scripts/tests/run_python_test.py '{run_args_string}'"
+        return f"scripts/run_in_python_env.sh out/venv './scripts/tests/run_python_test.py {run_args_string}'"
 
