@@ -1,18 +1,3 @@
-#!/usr/bin/python3
-# Copyright (c) 2024 Project CHIP Authors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional
@@ -25,26 +10,9 @@ class Metadata:
     py_script_path: Optional[str] = None
     run: Optional[str] = None
     app: Optional[str] = None
-    discriminator: Optional[str] = None
-    passcode: Optional[str] = None
-    factoryreset: bool = False
-    KVS: Optional[str] = None
-    trace_to_app_args: Optional[str] = None
-    trace_to_script_args_json: Optional[str] = None
-    trace_to_script_args_perfetto: Optional[str] = None
-    storage_path: Optional[str] = None
-    commissioning_method: Optional[str] = None
-    enable_key: Optional[str] = None
-    hex_arg: Optional[str] = None
-    endpoint: Optional[str] = None
-    manual_code: Optional[str] = None
-    bool_arg: Optional[str] = None
-    PICS: Optional[str] = None
-    tests: Optional[str] = None
-    int_arg: Optional[str] = None
-    log_level: Optional[str] = None
-    t: Optional[str] = None
-    disable_test: Optional[bool] = False
+    app_args: Optional[str] = None
+    script_args: Optional[str] = None
+    factory_reset: [bool] = False
 
 
     def copy_from_dict(self, attr_dict: Dict[str, str]) -> None:
@@ -64,70 +32,17 @@ class Metadata:
         if "run" in attr_dict:
             self.run = attr_dict["run"]
 
-        if "discriminator" in attr_dict:
-            self.discriminator = attr_dict["discriminator"]
+        if "app-args" in attr_dict:
+            self.app_args = attr_dict["app-args"]
 
-        if "passcode" in attr_dict:
-            self.passcode = attr_dict["passcode"]
+        if "script-args" in attr_dict:
+            self.script_args = attr_dict["script-args"]
 
         if "py_script_path" in attr_dict:
             self.py_script_path = attr_dict["py_script_path"]
 
         if "factoryreset" in attr_dict:
-            self.factoryreset = bool(attr_dict["factoryreset"])
-
-        if "KVS" in attr_dict:
-            self.KVS = attr_dict["KVS"]
-
-        if "trace_to_app_args" in attr_dict:
-            self.trace_to_app_args = attr_dict["trace_to_app_args"]
-
-        if "trace_to_script_args_json" in attr_dict:
-            self.trace_to_script_args_json = attr_dict["trace_to_script_args_json"]
-
-        if "trace_to_script_args_perfetto" in attr_dict:
-            self.trace_to_script_args_perfetto = attr_dict["trace_to_script_args_perfetto"]
-
-        if "storage_path" in attr_dict:
-            self.storage_path = attr_dict["storage_path"]
-
-        if "commissioning_method" in attr_dict:
-            self.commissioning_method = attr_dict["commissioning_method"]
-
-        if "enable_key" in attr_dict:
-            self.enable_key = attr_dict["enable_key"]
-
-        if "hex_arg" in attr_dict:
-            self.hex_arg = attr_dict["hex_arg"]
-
-        if "endpoint" in attr_dict:
-            self.endpoint = attr_dict["endpoint"]
-
-        if "manual_code" in attr_dict:
-            self.manual_code = attr_dict["manual_code"]
-
-        if "bool_arg" in attr_dict:
-            self.bool_arg = attr_dict["bool_arg"]
-
-        if "PICS" in attr_dict:
-            self.PICS = attr_dict["PICS"]
-
-        if "tests" in attr_dict:
-            self.tests = attr_dict["tests"]
-
-        if "int_arg" in attr_dict:
-            self.int_arg = attr_dict["int_arg"]
-
-        if "log_level" in attr_dict:
-            self.log_level = attr_dict["log_level"]
-
-
-        if "t" in attr_dict:
-            self.t = attr_dict["t"]
-
-        if "disable_test" in attr_dict:
-            self.disable_test = attr_dict["disable_test"]
-
+            self.factory_reset = bool(attr_dict["factoryreset"])
 
 
 
@@ -164,39 +79,22 @@ class MetadataReader:
           the value for that argument defined in the test script.
         """
 
-        for run_arg, run_arg_val in metadata_dict.items():
+        # detect ${VARIABLE} pattern which is used to
+        #
+        
+        placeholder_ptrn = r"(?<=\${).*?(?=})"
+        for arg, arg_val in metadata_dict.items():
+            variables = re.findall(placeholder_ptrn, arg_val)
+            for variable in variables:
 
-            if not type(run_arg_val) == str or run_arg == "run":
-                metadata_dict[run_arg] = run_arg_val
-                continue
+                if variable not in self.env:
+                    continue
+                
+                arg_val = arg_val.replace(f'${{{variable}}}', self.env[variable])
 
-            if run_arg_val is None:
-                continue
-
-            sub_args = run_arg_val.split('/')
-
-            if len(sub_args) not in [1, 2]:
-                err = """The argument is not in the correct format. 
-                The argument must follow the format of arg1 or arg1/arg2. 
-                For example, arg1 represents the argument type and optionally arg2 
-                represents a specific variable defined in the environment file whose
-                value should be used as the argument value. If arg2 is not specified,
-                we will just use the first value associated with arg1 in the environment file."""
-                raise Exception(err)
-
-            if len(sub_args) == 1:
-                run_arg_val = self.env.get(sub_args[0])
-
-            elif len(sub_args) == 2:
-                run_arg_val = self.env.get(sub_args[0]).get(sub_args[1])
-
-            # if a argument has been specified in the comment header
-            # but can't be found in the env file, consider it to be
-            # boolean value.
-            if run_arg_val is None:
-                run_arg_val = "True"
-
-            metadata_dict[run_arg] = run_arg_val
+            metadata_dict[arg] = arg_val
+                  
+            
 
     def __read_args__(self, run_args_lines: List[str]) -> Dict[str, str]:
         """
@@ -256,7 +154,7 @@ class MetadataReader:
         """
 
         runs_def_ptrn = re.compile(r'^\s*#\s*test-runner-runs:\s*(.*)$')
-        args_def_ptrn = re.compile(r'^\s*#\s*test-runner-run/([a-zA-Z0-9_]+):\s*(.*)$')
+        arg_def_ptrn = re.compile(r'^\s*#\s*test-runner-run/([a-zA-Z0-9_]+)/([a-zA-Z0-9_\-]+):\s*(.*)$')
 
         runs_arg_lines: Dict[str, List[str]] = {}
         runs_metadata = []
@@ -265,27 +163,24 @@ class MetadataReader:
             for line in py_script.readlines():
 
                 runs_match = runs_def_ptrn.match(line.strip())
-                args_match = args_def_ptrn.match(line.strip())
+                args_match = arg_def_ptrn.match(line.strip())
 
                 if runs_match:
                     for run in runs_match.group(1).strip().split():
-                        runs_arg_lines[run] = []
+                        runs_arg_lines[run] = {}
+                        runs_arg_lines[run]['run'] = run
+                        runs_arg_lines[run]['py_script_path'] = py_script_path
 
                 elif args_match:
-                    runs_arg_lines[args_match.group(1)].append(args_match.group(2))
+                    runs_arg_lines[args_match.group(1)][args_match.group(2)] = args_match.group(3)
 
-        for run, lines in runs_arg_lines.items():
-            metadata_dict = self.__read_args__(lines)
-            self.__resolve_env_vals__(metadata_dict)
 
-            # store the run value and script location in the
-            # metadata object
-            metadata_dict['py_script_path'] = py_script_path
-            metadata_dict['run'] = run
-
+        for run, attr in runs_arg_lines.items():
+            self.__resolve_env_vals__(attr)
+            
             metadata = Metadata()
 
-            metadata.copy_from_dict(metadata_dict)
+            metadata.copy_from_dict(attr)
             runs_metadata.append(metadata)
 
         return runs_metadata
