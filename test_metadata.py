@@ -1,18 +1,3 @@
-#!/usr/bin/python3
-# Copyright (c) 2024 Project CHIP Authors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import os
 import unittest
 from os import path
@@ -27,24 +12,15 @@ class TestMetadataReader(unittest.TestCase):
    
     test_file_content = ''' 
     # test-runner-runs: run1 
-    # test-runner-run/run1: app/all-clusters discriminator passcode factoryreset KVS
-    # test-runner-run/run1: trace_to_app_args trace_to_script_args_json trace_to_script_args_perfetto
-    # test-runner-run/run1: storage_path commissioning_method
+    # test-runner-run/run1/app: ${ALL_CLUSTERS_APP}
+    # test-runner-run/run1/app-args: --discriminator 1234 --trace-to json:${TRACE_BASE}.json
+    # test-runner-run/run1/script-args: --commissioning-method on-network --trace-to perfetto:${TRACE_BASE}.json
+    # test-runner-run/run1/factoryreset: True
     '''
 
     env_file_content ='''
-    discriminator: 1234
-    passcode: 20202021
-    KVS: kvs1
-    storage_path: admin_storage.json
-    trace_to_app_args: json:out/trace_data/app-{SCRIPT_BASE_NAME}.json
-    trace_to_script_args_json: json:out/trace_data/test-{SCRIPT_BASE_NAME}.json
-    trace_to_script_args_perfetto: perfetto:out/trace_data/test-{SCRIPT_BASE_NAME}.perfetto
-    commissioning_method: on-network
-    PICS: src/app/tests/suites/certification/ci-pics-values
-    app:
-     all-clusters: out/linux-x64-all-clusters-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-all-clusters-app
-     lock: out/linux-x64-lock-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-lock-app
+    TRACE_BASE: out/trace_data/test-{SCRIPT_BASE_NAME}
+    ALL_CLUSTERS_APP: out/linux-x64-all-clusters-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-all-clusters-app
     '''
 
 
@@ -57,10 +33,9 @@ class TestMetadataReader(unittest.TestCase):
         self.maxDiff = None
         self.test_file_expected_arg_string = "scripts/run_in_python_env.sh out/venv './scripts/tests/run_python_test.py "\
         "--app out/linux-x64-all-clusters-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-all-clusters-app "\
-        "--factoryreset --app-args \" --discriminator 1234 --KVS kvs1 --trace-to json:out/trace_data/app-{SCRIPT_BASE_NAME}.json\" "\
-        "--script \""+self.temp_file+"\" --script-args \" --storage-path admin_storage.json --commissioning-method "\
-        "on-network --discriminator 1234 --passcode 20202021 --trace-to json:out/trace_data/test-{SCRIPT_BASE_NAME}.json "\
-        "--trace-to perfetto:out/trace_data/test-{SCRIPT_BASE_NAME}.perfetto\"'"
+        "--factoryreset --app-args \"--discriminator 1234 --trace-to json:out/trace_data/test-{SCRIPT_BASE_NAME}.json\" "\
+        "--script \""+self.temp_file+"\" --script-args \"--commissioning-method on-network "\
+        "--trace-to perfetto:out/trace_data/test-{SCRIPT_BASE_NAME}.json\"'"
     
         
 
@@ -70,25 +45,10 @@ class TestMetadataReader(unittest.TestCase):
             fp.close()
             return fp.name
 
-
-    def test_parse_single_run(self):
-        
-        expected_metadata = Metadata(app="out/linux-x64-all-clusters-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-all-clusters-app",
-                                     discriminator=1234, py_script_path=self.temp_file, run="run1", passcode=20202021, factoryreset=True, KVS="kvs1",
-                                     trace_to_app_args="json:out/trace_data/app-{SCRIPT_BASE_NAME}.json",
-                                     trace_to_script_args_json="json:out/trace_data/test-{SCRIPT_BASE_NAME}.json",
-                                     trace_to_script_args_perfetto="perfetto:out/trace_data/test-{SCRIPT_BASE_NAME}.perfetto",
-                                     storage_path="admin_storage.json",
-                                     commissioning_method="on-network"
-                                     )
-
-        self.assertEqual(expected_metadata, self.reader.parse_script(self.temp_file)[0])
-        pass
-
-
+ 
     def test_run_arg_generation(self):
         
-        actual = self.runner.run_test(self.temp_file)[0]
+        actual = self.runner.generate_run_commands(self.temp_file)[0]
         self.assertEqual(self.test_file_expected_arg_string,actual)
 
 
