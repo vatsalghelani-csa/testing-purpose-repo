@@ -1,6 +1,8 @@
-# test-runner-runs: run1
-# test-runner-run/run1: app/all-clusters factoryreset discriminator KVS trace_to_app_args
-# test-runner-run/run1: storage_path commissioning_method discriminator passcode trace_to_script_args_json trace_to_script_args_perfetto
+# test-runner-runs: run1 
+# test-runner-run/run1/app: ${ALL_CLUSTERS_APP}
+# test-runner-run/run1/factoryreset: True
+# test-runner-run/run1/app-args: --discriminator 1234 --KVS kvs1 --trace-to json:${TRACE_APP}.json
+# test-runner-run/run1/script-args: --storage-path admin_storage.json --commissioning-method on-network --discriminator 1234 --passcode 20202021 --trace-to json:${TRACE_TEST_JSON}.json --trace-to perfetto:${TRACE_TEST_PERFETTO}.perfetto
 
 
 #    Copyright (c) 2022 Project CHIP Authors
