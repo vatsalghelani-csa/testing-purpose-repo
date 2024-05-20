@@ -124,7 +124,6 @@ class TestRunner:
         run_args.extend(self.__arg_values__("--app",run.app))
         run_args.extend(self.__arg_values__("--factoryreset",run.factory_reset))
         
-        
                         
         app_args = self.get_app_args(run)
         if app_args != "":
