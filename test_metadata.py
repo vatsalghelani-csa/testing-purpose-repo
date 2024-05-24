@@ -13,14 +13,18 @@ class TestMetadataReader(unittest.TestCase):
     test_file_content = ''' 
     # test-runner-runs: run1 
     # test-runner-run/run1/app: ${ALL_CLUSTERS_APP}
-    # test-runner-run/run1/app-args: --discriminator 1234 --trace-to json:${TRACE_BASE}.json
-    # test-runner-run/run1/script-args: --commissioning-method on-network --trace-to perfetto:${TRACE_BASE}.json
+    # test-runner-run/run1/app-args: --discriminator 1234 --trace-to json:${TRACE_APP}.json
+    # test-runner-run/run1/script-args: --commissioning-method on-network --trace-to json:${TRACE_TEST_JSON}.json --trace-to perfetto:${TRACE_TEST_PERFETTO}.perfetto
     # test-runner-run/run1/factoryreset: True
     '''
 
     env_file_content = '''
-    TRACE_BASE: out/trace_data/test-{SCRIPT_BASE_NAME}
     ALL_CLUSTERS_APP: out/linux-x64-all-clusters-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-all-clusters-app
+    CHIP_LOCK_APP: out/linux-x64-lock-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-lock-app
+    ENERGY_MANAGEMENT_APP: out/linux-x64-energy-management-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-energy-management-app
+    TRACE_APP: out/trace_data/app-{SCRIPT_BASE_NAME}
+    TRACE_TEST_JSON: out/trace_data/test-{SCRIPT_BASE_NAME}
+    TRACE_TEST_PERFETTO: out/trace_data/test-{SCRIPT_BASE_NAME}
     '''
 
     def generate_temp_file(self, directory: str, file_content: str) -> str:
@@ -41,9 +45,9 @@ class TestMetadataReader(unittest.TestCase):
             test_file_expected_arg_string = (
                 "scripts/run_in_python_env.sh out/venv './scripts/tests/run_python_test.py "
                 "--app out/linux-x64-all-clusters-ipv6only-no-ble-no-wifi-tsan-clang-test/chip-all-clusters-app "
-                "--factoryreset --app-args \"--discriminator 1234 --trace-to json:out/trace_data/test-{SCRIPT_BASE_NAME}.json\" "
+                "--factoryreset --app-args \"--discriminator 1234 --trace-to json:out/trace_data/app-{SCRIPT_BASE_NAME}.json\" "
                 "--script \"" + temp_file + "\" --script-args \"--commissioning-method on-network "
-                "--trace-to perfetto:out/trace_data/test-{SCRIPT_BASE_NAME}.json\"'"
+                "--trace-to json:out/trace_data/test-{SCRIPT_BASE_NAME}.json --trace-to perfetto:out/trace_data/test-{SCRIPT_BASE_NAME}.perfetto\"'"
             )
 
             actual = runner.generate_run_commands(temp_file)[0]
