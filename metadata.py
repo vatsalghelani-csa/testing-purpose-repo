@@ -74,54 +74,12 @@ class MetadataReader:
          Dictionary where each key represent a particular argument and its value represent
          the value for that argument defined in the test script.
         """
-        placeholder_ptrn = r"(?<=\${).*?(?=})"
         for arg, arg_val in metadata_dict.items():
-            variables = re.findall(placeholder_ptrn, arg_val)
-            for variable in variables:
-                if variable not in self.env:
-                    continue
-
-                arg_val = arg_val.replace(f'${{{variable}}}', self.env[variable])
-
+            # We do not expect to recurse (like ${FOO_${BAR}}) so just expand once
+            for name, value in self.env.items():
+                arg_val = arg_val.replace(f'${{{name}}}', value)
             metadata_dict[arg] = arg_val
 
-    def __read_args__(self, run_args_lines: List[str]) -> Dict[str, str]:
-        """
-        Parses a list of lines and extracts argument
-        values from it.
-
-        Parameters:
-
-        run_args_lines:
-         Line in test script header that contains run argument definition.
-         Each line will contain a list of run arguments separated by a space.
-         Line below is one example of what the run argument line will look like:
-         "app/all-clusters discriminator KVS storage-path"
-
-         In this case the line defines that app, discriminator, KVS, and storage-path
-         are the arguments that should be used with this run.
-
-         An argument can be defined multiple times in the same line or in different lines.
-         The last definition will override any previous definition. For example,
-         "KVS/kvs1 KVS/kvs2 KVS/kvs3" line will lead to KVS value of kvs3.
-        """
-        metadata_dict: Dict[str, str] = {}
-
-        for run_line in run_args_lines:
-            for run_arg_word in run_line.strip().split():
-                '''
-                We expect the run arg to be defined in one of the
-                following two formats:
-                1. run_arg
-                2. run_arg/run_arg_val
-
-                Examples: "discriminator" and "app/all_clusters"
-
-                '''
-                run_arg = run_arg_word.split('/', 1)[0]
-                metadata_dict[run_arg] = run_arg_word
-
-        return metadata_dict
 
     def parse_script(self, py_script_path: str) -> List[Metadata]:
         """
