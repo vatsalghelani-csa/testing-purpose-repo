@@ -6,12 +6,15 @@ import yaml
 
 @dataclass
 class Metadata:
-    py_script_path: Optional[str] = None
-    run: Optional[str] = None
-    app: Optional[str] = None
-    app_args: Optional[str] = None
-    script_args: Optional[str] = None
-    factory_reset: bool = False
+    py_script_path: str
+    run: str
+    app: str
+    app_args: str
+    script_args: str
+    factoryreset: bool = False
+    factoryreset_app_only: bool = False
+    script_gdb: bool = False
+    quiet: bool = True
 
     def copy_from_dict(self, attr_dict: Dict[str, Any]) -> None:
         """
@@ -39,7 +42,16 @@ class Metadata:
             self.py_script_path = attr_dict["py_script_path"]
 
         if "factoryreset" in attr_dict:
-            self.factory_reset = bool(attr_dict["factoryreset"])
+            self.factoryreset = bool(attr_dict["factoryreset"])
+
+        if "factoryreset_app_only" in attr_dict:
+            self.factoryreset_app_only = bool(attr_dict["factoryreset_app_only"])
+
+        if "script_gdb" in attr_dict:
+            self.script_gdb = bool(attr_dict["script_gdb"])
+
+        if "quiet" in attr_dict:
+            self.quiet = bool(attr_dict["quiet"])
 
 
 class MetadataReader:
@@ -123,7 +135,17 @@ class MetadataReader:
         for run, attr in runs_arg_lines.items():
             self.__resolve_env_vals__(attr)
 
-            metadata = Metadata()
+            metadata = Metadata(
+                py_script_path=attr.get("py_script_path", ""),
+                run=attr.get("run", ""),
+                app=attr.get("app", ""),
+                app_args=attr.get("app_args", ""),
+                script_args=attr.get("script_args", ""),
+                factoryreset=bool(attr.get("factoryreset", False)),
+                factoryreset_app_only=bool(attr.get("factoryreset_app_only", False)),
+                script_gdb=bool(attr.get("script_gdb", False)),
+                quiet=bool(attr.get("quiet", True))
+            )
             metadata.copy_from_dict(attr)
             runs_metadata.append(metadata)
 
